@@ -12,7 +12,7 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalShadowLight
 import com.badlogic.gdx.graphics.g3d.utils.*
 import com.badlogic.gdx.physics.bullet.collision.*
 import com.badlogic.gdx.physics.bullet.dynamics.*
-import com.badlogic.gdx.utils.Array
+import com.badlogic.gdx.utils.Array as GdxArray
 import com.badlogic.gdx.Gdx
 import ktx.actors.plusAssign
 import ktx.app.KtxInputAdapter
@@ -34,9 +34,9 @@ class GameScreen(val app: App) : KtxScreen {
     private var environment = Environment()
     private var light = DirectionalShadowLight(1024, 1024, 20f, 20f, 1f, 300f)
 
-    private val constructors = Array<btRigidBody.btRigidBodyConstructionInfo>()
-    private val entities = Array<BulletEntity>()
-    private val models = Array<Model>()
+    private val constructors = GdxArray<btRigidBody.btRigidBodyConstructionInfo>()
+    private val entities = GdxArray<BulletEntity>()
+    private val models = GdxArray<Model>()
 
     private var modelBuilder = ModelBuilder()
 
@@ -181,10 +181,11 @@ class GameScreen(val app: App) : KtxScreen {
             }
         }
 
+        // this is what makes the player move
         body.applyCentralForce(tmp)
-
         body.getWorldTransform(transform)
         cam.position.set(transform.getTranslation(tmp2))
+
         tmp.set(0f, 0f, 0f)
         tmp2.set(0f, 0f, 0f)
     }
