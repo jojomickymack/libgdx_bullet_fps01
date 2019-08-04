@@ -45,6 +45,10 @@ Keeping these objects in these Gdx arrays will prevent that from happening.
 There is an issue you'll notice where if you move the mouse to look around before using the WSDA controls to move yourself, for some reason you 
 can't move anymore - I'm not sure why that happens.
 
+Keep in mind that this example includes support for gamepads and and on screen buttons for android. If you don't have a use for those, it's 
+simple to remove, just delete the 'input' directories in android/assets and core/src/org.central - all references to it will turn red. Uncomment 
+the freelook binding to the mouse in the updateMovement method in GameScreen, and it should work much better on desktop.
+
 The 3d capabilities of Libgdx are very nice - but there's few examples of how to use them correctly. Bullet is a very powerful tool for physics 
 simulations, and it's great that libgdx includes it - I do hope that this example might help others get it up and running and create some cool 
 3d games!
