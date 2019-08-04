@@ -168,7 +168,21 @@ class GameScreen(val app: App) : KtxScreen {
         tmp.set(cam.direction).crs(cam.up).nor()
         cam.direction.rotate(tmp, deltaY)
 */
+
+        val deltaX = -app.osc.rightPadVector.x * 1.5f
+        val deltaY = app.osc.rightPadVector.y * 1.5f
+        tmp.set(0f, 0f, 0f)
+        cam.rotate(cam.up, deltaX)
+        tmp.set(cam.direction).crs(cam.up).nor()
+        cam.direction.rotate(tmp, deltaY)
+        tmp.set(0f, 0f, 0f)
+
         val speed = 20
+
+        if (app.osc.leftPadVector.y > 0) tmp.add(tmp2.set(cam.direction).nor().scl(speed.toFloat()))
+        if (app.osc.leftPadVector.y < 0) tmp.add(tmp2.set(cam.direction).nor().scl(-speed.toFloat()))
+        if (app.osc.leftPadVector.x < 0) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(-speed.toFloat()))
+        if (app.osc.leftPadVector.x > 0) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(speed.toFloat()))
 
         if (forward || app.ic.aPressed) tmp.add(tmp2.set(cam.direction).nor().scl(speed.toFloat()))
         if (back) tmp.add(tmp2.set(cam.direction).nor().scl(-speed.toFloat()))
