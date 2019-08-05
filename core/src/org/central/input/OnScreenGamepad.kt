@@ -7,12 +7,12 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.InputListener
-import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import org.central.App
+
 
 class OnScreenGamepad(app: App): Table() {
     private val buttonWidth = 100f
@@ -61,6 +61,7 @@ class OnScreenGamepad(app: App): Table() {
 //        rightPad.color = Color(255f, 0f, 0f, 1f)
 
         this.row().pad(5f, 5f, 5f, 5f)
+// this is the old button layout, uncommment these and comment out the left and right pad parts to use that instead
 //        this.add(aImg).size(aImg.width, aImg.height)
 //        this.add(bImg).size(bImg.width, bImg.height)
 //        this.add(leftImg).size(leftImg.width, leftImg.height).padLeft(app.hudStg.width - aImg.width - bImg.width - leftImg.width - rightImg.width - 40f)

@@ -202,6 +202,8 @@ class GameScreen(val app: App) : KtxScreen {
 
         tmp.set(0f, 0f, 0f)
         tmp2.set(0f, 0f, 0f)
+
+        body.activate()
     }
 
     override fun render(delta: Float) {

@@ -29,6 +29,9 @@ applied to the player's body, then the camera's position is changed by a 2nd vec
 body.applyCentralForce(tmp)
 body.getWorldTransform(transform)
 cam.position.set(transform.getTranslation(tmp2))
+
+// this prevents the player's body from falling asleep after it comes to rest
+body.activate()
 ```
 
 Also used in this is the technique of storing GdxArrays of 
@@ -41,9 +44,6 @@ especially on Android.
 This will result in only a message appearing in the debugger, but highlights something important about working with Bullet - it's a c++ native 
 library, and all objects created from a btSomeObjectName need to be kept in scope or they can disappear on you and cause your game to crash. 
 Keeping these objects in these Gdx arrays will prevent that from happening.
-
-There is an issue you'll notice where if you move the mouse to look around before using the WSDA controls to move yourself, for some reason you 
-can't move anymore - I'm not sure why that happens.
 
 Keep in mind that this example includes support for gamepads and and on screen buttons for android. If you don't have a use for those, it's 
 simple to remove, just delete the 'input' directories in android/assets and core/src/org.central - all references to it will turn red. Uncomment 
