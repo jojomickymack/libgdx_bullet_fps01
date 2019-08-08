@@ -11,6 +11,7 @@ import com.badlogic.gdx.physics.bullet.Bullet
 import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher
 import com.badlogic.gdx.physics.bullet.collision.btDbvtBroadphase
 import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration
+import com.badlogic.gdx.physics.bullet.collision.btGhostPairCallback
 import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld
 import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver
 import com.badlogic.gdx.scenes.scene2d.Stage
@@ -96,6 +97,9 @@ class App : KtxGame<Screen>() {
         this.broadphase = btDbvtBroadphase()
         this.solver = btSequentialImpulseConstraintSolver()
         this.collisionWorld = btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration)
+
+        val ghostPairCallback = btGhostPairCallback()
+        this.broadphase.overlappingPairCache.setInternalGhostPairCallback(ghostPairCallback)
 
         this.ic = InputCtl(this)
         this.osc = OnScreenGamepad(this)

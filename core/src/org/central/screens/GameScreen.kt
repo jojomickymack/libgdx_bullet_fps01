@@ -45,16 +45,29 @@ class GameScreen(val app: App) : KtxScreen {
 
     private val badlogic = Texture(Gdx.files.internal("badlogic.png"))
 
-    lateinit var player: BulletEntity
+    // lateinit var player: BulletEntity
 
-    private var tmp = Vector3()
-    private var tmp2 = Vector3()
+//    private var tmp = Vector3()
+//    private var tmp2 = Vector3()
 
     private var forward = false
     private var back = false
     private var left = false
     private var right = false
     private var jump = false
+
+    private lateinit var characterController: btKinematicCharacterController
+
+    private val playerMaterial = Material(TextureAttribute.createDiffuse(badlogic), ColorAttribute.createSpecular(1f, 1f, 1f, 1f), FloatAttribute.createShininess(8f))
+    private val playerModel = modelBuilder.createCapsule(2f, 6f, 16, playerMaterial, (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal or VertexAttributes.Usage.TextureCoordinates).toLong())
+    private val playerModelInstance = ModelInstance(playerModel, Matrix4().setToTranslation(5f, 25f, 5f))
+
+    private lateinit var playerGhostObject: btPairCachingGhostObject
+
+    private var characterDirection = Vector3()
+    private var walkDirection = Vector3()
+
+    private val tmp = Vector3()
 
     private fun setUpEntity(model: Model, mass: Float, x: Float, y: Float, z: Float): BulletEntity {
         val tmpV = Vector3()
@@ -82,7 +95,7 @@ class GameScreen(val app: App) : KtxScreen {
         entities.add(bulletEntity)
         models.add(model)
 
-        app.collisionWorld.addRigidBody(body)
+        app.collisionWorld.addRigidBody(body, btBroadphaseProxy.CollisionFilterGroups.CharacterFilter, btBroadphaseProxy.CollisionFilterGroups.AllFilter)
 
         return bulletEntity
     }
@@ -131,9 +144,6 @@ class GameScreen(val app: App) : KtxScreen {
         val boxModel = modelBuilder.createBox(1f, 1f, 1f, Material(ColorAttribute.createDiffuse(Color.WHITE),
                 ColorAttribute.createSpecular(Color.WHITE), FloatAttribute.createShininess(64f)), (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).toLong())
 
-        val material = Material(TextureAttribute.createDiffuse(badlogic), ColorAttribute.createSpecular(1f, 1f, 1f, 1f), FloatAttribute.createShininess(8f))
-        val playerModel = modelBuilder.createCapsule(2f, 6f, 16, material, (VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal or VertexAttributes.Usage.TextureCoordinates).toLong())
-
         val wall1 = setUpEntity(wallHorizontal, 0f, 0f, 10f, -20f)
         val wall2 = setUpEntity(wallHorizontal, 0f, 0f, 10f, 20f)
         val wall3 = setUpEntity(wallVertical, 0f, 20f, 10f, 0f)
@@ -146,7 +156,20 @@ class GameScreen(val app: App) : KtxScreen {
         assignRandomColor(wall4)
         assignRandomColor(ground)
 
-        player = setUpEntity(playerModel, 1f, 5f, 23f, 5f)
+        //player = setUpEntity(playerModel, 1f, 5f, 23f, 5f)
+
+        val playerGhostShape = btCapsuleShape(2f, 2f)
+
+        playerGhostObject = btPairCachingGhostObject()
+        playerGhostObject.worldTransform = playerModelInstance.transform
+        playerGhostObject.collisionShape = playerGhostShape
+        playerGhostObject.collisionFlags = btCollisionObject.CollisionFlags.CF_CHARACTER_OBJECT
+
+        // this kinematicCharacterController thinks that left is down, that's why the Vector3 is added to define 'up'
+        characterController = btKinematicCharacterController(playerGhostObject, playerGhostShape, .35f, Vector3(0f, 1f, 0f))
+
+        app.collisionWorld.addCollisionObject(playerGhostObject, btBroadphaseProxy.CollisionFilterGroups.CharacterFilter, btBroadphaseProxy.CollisionFilterGroups.AllFilter)
+        app.collisionWorld.addAction(characterController)
 
         for (x in 0 until BOXCOUNT_X) {
             for (y in 0 until BOXCOUNT_Y) {
@@ -158,7 +181,7 @@ class GameScreen(val app: App) : KtxScreen {
         }
     }
 
-    private fun updateMovement(cam: PerspectiveCamera, body: btRigidBody, transform: Matrix4) {
+    private fun updateMovement(delta: Float) {
 // binding the mouse to the camera is definitely the way to go on desktop
 /*
         val deltaX = -Gdx.input.deltaX * 0.5f
@@ -172,38 +195,44 @@ class GameScreen(val app: App) : KtxScreen {
         val deltaX = -app.osc.rightPadVector.x * 1.5f
         val deltaY = app.osc.rightPadVector.y * 1.5f
         tmp.set(0f, 0f, 0f)
-        cam.rotate(cam.up, deltaX)
-        tmp.set(cam.direction).crs(cam.up).nor()
-        cam.direction.rotate(tmp, deltaY)
+        app.modelStgCam.rotate(app.modelStgCam.up, deltaX)
+        tmp.set(app.modelStgCam.direction).crs(app.modelStgCam.up).nor()
+        app.modelStgCam.direction.rotate(tmp, deltaY)
         tmp.set(0f, 0f, 0f)
 
-        val speed = 20
+        // the walk direction is calculated based on the button that's pressed and where the camera is pointed
+        // it's then applied to the btKinematicCharacterController
+        characterDirection.set(-1f, 0f, 0f).rot(playerModelInstance.transform).nor()
+        walkDirection.set(0f, 0f, 0f)
 
-        if (app.osc.leftPadVector.y > 0) tmp.add(tmp2.set(cam.direction).nor().scl(speed.toFloat()))
-        if (app.osc.leftPadVector.y < 0) tmp.add(tmp2.set(cam.direction).nor().scl(-speed.toFloat()))
-        if (app.osc.leftPadVector.x < 0) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(-speed.toFloat()))
-        if (app.osc.leftPadVector.x > 0) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(speed.toFloat()))
+        if (app.osc.leftPadVector.y > 0) walkDirection.add(app.modelStgCam.direction)
+        if (app.osc.leftPadVector.y < 0) walkDirection.sub(app.modelStgCam.direction)
+        if (app.osc.leftPadVector.x < 0) tmp.set(app.modelStgCam.direction).crs(app.modelStgCam.up).scl(-1f)
+        if (app.osc.leftPadVector.x > 0) tmp.set(app.modelStgCam.direction).crs(app.modelStgCam.up)
 
-        if (forward || app.ic.aPressed) tmp.add(tmp2.set(cam.direction).nor().scl(speed.toFloat()))
-        if (back) tmp.add(tmp2.set(cam.direction).nor().scl(-speed.toFloat()))
-        if (left || app.ic.lPressed) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(-speed.toFloat()))
-        if (right || app.ic.rPressed) tmp.add(tmp2.set(cam.direction).crs(cam.up).nor().scl(speed.toFloat()))
+        if (forward || app.ic.aPressed) walkDirection.add(app.modelStgCam.direction)
+        if (back) walkDirection.sub(app.modelStgCam.direction)
+        if (left || app.ic.lPressed) tmp.set(app.modelStgCam.direction).crs(app.modelStgCam.up).scl(-1f)
+        if (right || app.ic.rPressed) tmp.set(app.modelStgCam.direction).crs(app.modelStgCam.up)
+
+        walkDirection.add(tmp)
+        walkDirection.scl(10f * delta)
+        characterController.setWalkDirection(walkDirection)
+
+        // a ghost object is a companion to a btRigidBody to filter collisions
+        val ghost = Matrix4()
+        val translation = Vector3()
+        playerGhostObject.getWorldTransform(ghost)
+        ghost.getTranslation(translation)
+        playerModelInstance.transform.set(translation.x, translation.y, translation.z, app.modelStgCam.direction.x, app.modelStgCam.direction.y, app.modelStgCam.direction.z, 0f)
+        app.modelStgCam.position.set(translation.x, translation.y, translation.z)
+        app.modelStgCam.update(true)
 
         if (jump || app.ic.bPressed) {
-            if (body.linearVelocity.y < 1 && body.linearVelocity.y > 0) {
-                body.applyCentralImpulse(tmp.set(0f, 5f, 0f))
-            }
+            characterController.jumpSpeed = 2f
+            // Vector3 is added to define 'up' so the character doesn't jump left
+            characterController.jump(Vector3(0f, 25f, 0f))
         }
-
-        // this is what makes the player move
-        body.applyCentralForce(tmp)
-        body.getWorldTransform(transform)
-        cam.position.set(transform.getTranslation(tmp2))
-
-        tmp.set(0f, 0f, 0f)
-        tmp2.set(0f, 0f, 0f)
-
-        body.activate()
     }
 
     override fun render(delta: Float) {
@@ -211,7 +240,7 @@ class GameScreen(val app: App) : KtxScreen {
         Gdx.gl.glClearColor(0f, 0f, 0f, 0f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
-        updateMovement(app.modelStgCam, player.body!!, player.modelInstance?.transform!!)
+        updateMovement(delta)
         app.collisionWorld.stepSimulation(delta, maxSubSteps, fixedTimeStep)
         app.modelStgCam.update()
 
@@ -279,5 +308,8 @@ class GameScreen(val app: App) : KtxScreen {
 
         for (c in constructors) c.dispose()
         constructors.clear()
+
+        characterController.dispose()
+        playerGhostObject.dispose()
     }
 }
