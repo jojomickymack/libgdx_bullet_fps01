@@ -18,8 +18,7 @@ issue](https://github.com/DeeepGames/SpaceGladiators/issues/1).
 - the book uses [Ashley](https://github.com/libgdx/ashley), an entity component system. While this is practical for a lot of reasons, it makes 
 the code pertaining to bullet specifically very difficult to locate and follow.
 
-- the book uses a btKinematicCharacterController to translate inputs to the camera, model, and btRigidBody in the physics world - I could not 
-get this approach to work with the structure presented in the libgdx demos.
+- the book uses a btKinematicCharacterController to translate inputs to the camera, model, and btRigidBody in the physics world - I ended up implementing it in the master branch because I liked it better, but having the player be a btRigidBody might be more appealing to you.
 
 Like blunderchip's implementation, I applied inputs to the btRigidBody and the camera to push them around - the tmp vector is added to, then 
 applied to the player's body, then the camera's position is changed by a 2nd vector. It's confusing, but it works great.
